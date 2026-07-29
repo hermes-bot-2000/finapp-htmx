@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Budgets</h1>
+<a href="{% url 'create_budget' %}">Add Budget</a>
+<a href="{% url 'budget_summary' %}">View Summary</a>
+<ul>
+{% for budget in budgets %}
+  <li>{{ budget.category.name }} - {{ budget.month|date:"Y-m" }}: ${{ budget.amount }}</li>
+{% empty %}
+  <li>No budgets yet.</li>
+{% endfor %}
+</ul>
+{% endblock %}

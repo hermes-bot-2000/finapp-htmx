@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Integrations</h1>
+<ul>
+{% for integration in integrations %}
+  <li>{{ integration.provider }} - {{ integration.bank_name }} ({{ integration.account_type }})</li>
+{% empty %}
+  <li>No integrations connected.</li>
+{% endfor %}
+</ul>
+{% endblock %}

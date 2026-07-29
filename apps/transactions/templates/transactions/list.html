@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Transactions</h1>
+<a href="{% url 'create_transaction' %}">Add Transaction</a>
+<form method="get">
+  <input type="date" name="date_from" value="{{ date_from }}">
+  <input type="date" name="date_to" value="{{ date_to }}">
+  <select name="category">
+    <option value="">All</option>
+    {% for category in categories %}
+      <option value="{{ category.id }}" {% if selected_category == category.id %}selected{% endif %}>{{ category.name }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit">Filter</button>
+</form>
+<ul>
+{% for t in transactions %}
+  <li>{{ t.date }} {{ t.category }}: ${{ t.amount }} - {{ t.description }}</li>
+{% empty %}
+  <li>No transactions found.</li>
+{% endfor %}
+</ul>
+{% endblock %}

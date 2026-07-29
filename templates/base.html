@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finapp</title>
+  <script src="https://unpkg.com/htmx.org@2.0.0"></script>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <header>
+    {% include "partials/nav.html" %}
+  </header>
+  <div class="layout">
+    <aside>
+      {% include "partials/sidebar.html" %}
+    </aside>
+    <main id="main-content">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Budget Summary - {{ month|date:"F Y" }}</h1>
+<ul>
+{% for row in summary %}
+  <li>{{ row.category }}: Budget ${{ row.amount }} | Actual ${{ row.actual }} | Remaining ${{ row.remaining }}</li>
+{% empty %}
+  <li>No budgets for this month.</li>
+{% endfor %}
+</ul>
+<a href="{% url 'list_budgets' %}">Back to Budgets</a>
+{% endblock %}

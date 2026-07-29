@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Dashboard</h1>
+{% if user.is_authenticated %}
+  <p>Net Worth: ${{ net_worth }}</p>
+  <h2>Recent Transactions</h2>
+  <ul>
+  {% for t in recent_transactions %}
+    <li>{{ t.date }} {{ t.category }}: ${{ t.amount }} - {{ t.description }}</li>
+  {% empty %}
+    <li>No recent transactions.</li>
+  {% endfor %}
+  </ul>
+  <h2>Budget Summary (This Month)</h2>
+  <ul>
+  {% for row in budget_summary %}
+    <li>{{ row.category }}: Budget ${{ row.amount }} | Actual ${{ row.actual }} | Remaining ${{ row.remaining }}</li>
+  {% empty %}
+    <li>No budgets set up.</li>
+  {% endfor %}
+  </ul>
+{% else %}
+  <p>Welcome to Finapp. Please <a href="{% url 'login' %}">login</a> or <a href="{% url 'register' %}">register</a>.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Accounts</h1>
+<a href="{% url 'create_account' %}">Add Account</a>
+<ul>
+{% for account in accounts %}
+  <li>{{ account.name }} - {{ account.get_account_type_display }}: ${{ account.balance }}</li>
+{% empty %}
+  <li>No accounts yet.</li>
+{% endfor %}
+</ul>
+{% endblock %}
