@@ -6,12 +6,17 @@ from apps.categories.models import Category
 from .models import Transaction
 from datetime import date
 
+
 class TransactionTests(TestCase):
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create_user("testuser", "test@test.com", "testpass123")
-        self.account = Account.objects.create(user=self.user, name="Checking", account_type="checking", balance=1000)
-        self.category = Category.objects.create(user=self.user, name="Groceries", category_type="expense")
+        self.account = Account.objects.create(
+            user=self.user, name="Checking", account_type="checking", balance=1000
+        )
+        self.category = Category.objects.create(
+            user=self.user, name="Groceries", category_type="expense"
+        )
         self.transaction = Transaction.objects.create(
             user=self.user, account=self.account, category=self.category,
             amount=50, date=date(2025, 1, 15), description="Walmart"
@@ -44,3 +49,54 @@ class TransactionTests(TestCase):
         })
         self.assertEqual(response.status_code, 302)
         self.assertTrue(Transaction.objects.filter(description="Target").exists())
+
+    def test_transaction_type_auto_derived_from_category(self):
+        """Transaction type should be auto-derived from category type on save."""
+        transaction = Transaction.objects.create(
+            user=self.user, account=self.account, category=self.category,
+            amount=25, date=date(2025, 1, 16), description="Test"
+        )
+        self.assertEqual(transaction.transaction_type, "expense")
+
+    def test_transaction_with_payee_and_memo(self):
+        transaction = Transaction.objects.create(
+            user=self.user, account=self.account, category=self.category,
+            amount=30, date=date(2025, 1, 17), description="Test",
+            payee="Amazon", memo="Order #12345"
+        )
+        self.assertEqual(transaction.payee, "Amazon")
+        self.assertEqual(transaction.memo, "Order #12345")
+
+    def test_transaction_recurring(self):
+        transaction = Transaction.objects.create(
+            user=self.user, account=self.account, category=self.category,
+            amount=100, date=date(2025, 1, 1), description="Rent",
+            is_recurring=True, recurring_frequency="monthly"
+        )
+        self.assertTrue(transaction.is_recurring)
+        self.assertEqual(transaction.recurring_frequency, "monthly")
+
+    def test_transaction_reconciled(self):
+        transaction = Transaction.objects.create(
+            user=self.user, account=self.account, category=self.category,
+            amount=50, date=date(2025, 1, 15), description="Walmart",
+            is_reconciled=True, reconciled_date=date(2025, 1, 31)
+        )
+        self.assertTrue(transaction.is_reconciled)
+        self.assertEqual(transaction.reconciled_date, date(2025, 1, 31))
+
+    def test_transaction_tags(self):
+        transaction = Transaction.objects.create(
+            user=self.user, account=self.account, category=self.category,
+            amount=50, date=date(2025, 1, 15), description="Walmart",
+            tags="groceries,food"
+        )
+        self.assertEqual(transaction.tag_list, ["groceries", "food"])
+
+    def test_transaction_pending(self):
+        transaction = Transaction.objects.create(
+            user=self.user, account=self.account, category=self.category,
+            amount=50, date=date(2025, 1, 15), description="Walmart",
+            pending=True
+        )
+        self.assertTrue(transaction.pending)
