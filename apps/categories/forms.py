@@ -17,4 +17,6 @@ class CategoryForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user")
         super().__init__(*args, **kwargs)
+        # sort_order has a model default; don't force it on the form.
+        self.fields["sort_order"].required = False
         self.fields["parent"].queryset = Category.objects.filter(user=self.user, category_type=self.initial.get("category_type", "expense"))

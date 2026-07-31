@@ -13,12 +13,12 @@ def list_categories(request):
 @require_http_methods(["GET", "POST"])
 def create_category(request):
     if request.method == "POST":
-        form = CategoryForm(request.POST)
+        form = CategoryForm(request.POST, user=request.user)
         if form.is_valid():
             category = form.save(commit=False)
             category.user = request.user
             category.save()
             return redirect("list_categories")
     else:
-        form = CategoryForm()
+        form = CategoryForm(user=request.user)
     return render(request, "categories/form.html", {"form": form})

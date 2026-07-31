@@ -15,3 +15,8 @@ class AccountForm(forms.ModelForm):
             "opened_date": forms.DateInput(attrs={"type": "date"}),
             "notes": forms.Textarea(attrs={"rows": 3}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # currency has a model default; don't force it on the form.
+        self.fields["currency"].required = False

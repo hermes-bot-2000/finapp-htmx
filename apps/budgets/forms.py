@@ -22,4 +22,7 @@ class BudgetForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user")
         super().__init__(*args, **kwargs)
+        # The following have model defaults; don't force them on the form.
+        for field in ("budget_type", "warning_threshold", "rollover_amount", "carried_over"):
+            self.fields[field].required = False
         self.fields["category"].queryset = Category.objects.filter(user=self.user, category_type="expense")
