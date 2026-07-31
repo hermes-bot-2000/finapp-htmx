@@ -1,0 +1,20 @@
+# Django
+__pycache__/
+*.py[cod]
+*.sqlite3
+db.sqlite3
+static_root/
+media/
+
+# Env / secrets
+.env
+.venv/
+venv/
+
+# Python tooling
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# OS
+.DS_Store
