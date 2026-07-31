@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Upload Bank Statement</h1>
+<p>Upload a CSV bank statement export. Supported columns: Date, Description, Amount (signed) or Debit/Credit, plus optional Balance.</p>
+
+{% if messages %}
+  <ul class="messages">
+    {% for message in messages %}
+      <li class="{{ message.tags }}">{{ message }}</li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+{% if imported is not None %}
+  <div class="import-result">
+    <p>Imported {{ imported }} of {{ total }} transaction(s).</p>
+    {% if errors %}
+      <ul class="errors">
+        {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Upload</button>
+</form>
+{% endblock %}
