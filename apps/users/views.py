@@ -31,4 +31,9 @@ def login_view(request):
 
 def logout_view(request):
     logout(request)
-    return redirect("login")
+    response = redirect("login")
+    # Force a full-page navigation (not a partial swap into <body>) so the
+    # shell is restored after logout.
+    if request.headers.get("HX-Request"):
+        response["HX-Redirect"] = response["Location"]
+    return response

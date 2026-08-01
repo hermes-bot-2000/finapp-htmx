@@ -1,3 +1,4 @@
+{% if not request.META.HTTP_HX_REQUEST %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -16,8 +17,11 @@
       {% include "partials/sidebar.html" %}
     </aside>
     <main id="main-content">
-      {% block content %}{% endblock %}
+{% endif %}
+{% block content %}{% endblock %}
+{% if not request.META.HTTP_HX_REQUEST %}
     </main>
   </div>
 </body>
 </html>
+{% endif %}
