@@ -55,10 +55,18 @@ class Transaction(models.Model):
     def save(self, *args, **kwargs):
         # Auto-derive transaction_type from category if not set
         if not self.transaction_type and self.category:
-            if self.category.category_type == "income":
-                self.transaction_type = "income"
-            elif self.category.category_type == "expense":
-                self.transaction_type = "expense"
+            self.transaction_type = self.category.category_type
+        # Convention: income/expense amounts are stored as POSITIVE. The sign
+        # of money is carried by ``transaction_type`` (income vs expense), which
+        # matches how Quicken/Simplifi display and avoids aggregate-math traps.
+        # Transfers keep the amount exactly as entered. This guard makes the
+        # convention hold regardless of where the row came from (form, import,
+        # management command).
+        if (
+            self.transaction_type in ("income", "expense")
+            and self.amount is not None
+        ):
+            self.amount = abs(self.amount)
         super().save(*args, **kwargs)
 
     @property

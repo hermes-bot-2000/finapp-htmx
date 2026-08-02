@@ -53,7 +53,7 @@ class Command(BaseCommand):
         accounts_data = [
             ("Checking", "checking", 3450.75),
             ("Savings", "savings", 12890.00),
-            ("Visa Credit", "credit_card", -2340.50),
+            ("Visa Credit", "credit_card", 2340.50),
         ]
         accounts = []
         for name, atype, balance in accounts_data:
@@ -104,7 +104,7 @@ class Command(BaseCommand):
                     account = accounts[0]
                 else:
                     cat = random.choice(expense_cats)
-                    amount = -round(random.uniform(3, 300), 2)
+                    amount = round(random.uniform(3, 300), 2)
                     account = random.choice(accounts)
                 descriptions = self._descriptions(cat.name)
                 desc = random.choice(descriptions)

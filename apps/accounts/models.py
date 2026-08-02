@@ -76,6 +76,18 @@ class Account(models.Model):
         return self.balance
 
     @property
+    def signed_balance(self):
+        """Balance in net-worth terms.
+
+        ``balance`` is always stored as a positive number. Liability accounts
+        (credit cards, loans) are owed money, so their contribution to net
+        worth is negative. Asset accounts contribute positively.
+        """
+        if self.account_type in ("credit_card", "loan"):
+            return -self.balance
+        return self.balance
+
+    @property
     def masked_account_number(self):
         """Return masked account number showing only last 4 digits."""
         if not self.account_number:

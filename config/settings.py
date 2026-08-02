@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'apps.users',
     'apps.accounts',
-    'apps.categories',
+    'apps.categories.apps.CategoriesConfig',
     'apps.transactions',
     'apps.budgets',
     'apps.integrations',

@@ -66,7 +66,12 @@ class Budget(models.Model):
 
     @property
     def spent(self):
-        """Calculate total spent in this budget period from transactions."""
+        """Total spent (positive) in this budget period from expense transactions.
+
+        Amounts are stored positive (see ``Transaction.save``); expenses are
+        identified by ``transaction_type`` rather than a negative sign, so a
+        plain ``Sum`` over expense rows yields the correct positive total.
+        """
         from apps.transactions.models import Transaction
 
         start = self.period_start or self.month
@@ -77,8 +82,8 @@ class Budget(models.Model):
             date__gte=start,
             date__lte=end,
             transaction_type="expense",
-        ).aggregate(models.Sum("amount"))["amount__sum"]
-        return spent or Decimal("0.00")
+        ).aggregate(total=models.Sum("amount"))["total"]
+        return abs(spent) if spent is not None else Decimal("0.00")
 
     @property
     def remaining(self):
@@ -87,7 +92,11 @@ class Budget(models.Model):
 
     @property
     def spent_percent(self):
-        """Percentage of budget spent."""
+        """Percentage of budget spent, clamped to a sane range.
+
+        Returns a value in ``[0, 100]``; over-budget spend is reported as > 100
+        by ``is_over_budget``/``is_warning`` rather than here.
+        """
         if self.total_budget == 0:
             return Decimal("0.00")
         return (self.spent / self.total_budget) * 100

@@ -100,3 +100,31 @@ class TransactionTests(TestCase):
             pending=True
         )
         self.assertTrue(transaction.pending)
+
+    def test_amount_is_stored_positive_regardless_of_input_sign(self):
+        """R1: income/expense amounts are stored positive; sign lives in type."""
+        t = Transaction.objects.create(
+            user=self.user, account=self.account, category=self.category,
+            amount=-99.99, date=date(2025, 1, 18), description="Neg input",
+        )
+        self.assertEqual(t.amount, 99.99)
+        self.assertEqual(t.transaction_type, "expense")
+
+
+class AccountBalanceTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("u2", "u2@test.com", "testpass123")
+
+    def test_signed_balance_liability_is_negative(self):
+        from decimal import Decimal
+        cc = Account.objects.create(
+            user=self.user, name="Visa", account_type="credit_card", balance=500
+        )
+        self.assertEqual(cc.signed_balance, Decimal("-500"))
+
+    def test_signed_balance_asset_is_positive(self):
+        from decimal import Decimal
+        chk = Account.objects.create(
+            user=self.user, name="Checking", account_type="checking", balance=1000
+        )
+        self.assertEqual(chk.signed_balance, Decimal("1000"))

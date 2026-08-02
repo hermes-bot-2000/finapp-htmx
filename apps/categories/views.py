@@ -1,12 +1,16 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
+from django.db.models import Q
 from .models import Category
 from .forms import CategoryForm
 
 @login_required
 def list_categories(request):
-    categories = Category.objects.filter(user=request.user)
+    # Show the user's own categories plus the shared system defaults.
+    categories = Category.objects.filter(
+        Q(user=request.user) | Q(is_system=True)
+    ).filter(is_active=True).distinct()
     return render(request, "categories/list.html", {"categories": categories})
 
 @login_required

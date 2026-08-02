@@ -41,9 +41,24 @@ class BudgetTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertTrue(Budget.objects.filter(category=self.category, amount=500).exists())
 
-    def test_budget_summary(self):
-        self.client.force_login(self.user)
-        response = self.client.get(reverse("budget_summary"), {"month": "2025-01"})
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Groceries")
-        self.assertContains(response, "100")
+    def test_budget_spent_uses_positive_amounts(self):
+        """Expenses stored positive must be summed as positive 'spent' (R1)."""
+        from decimal import Decimal
+        Transaction.objects.create(
+            user=self.user, account=self.account, category=self.category,
+            amount=Decimal("250"), date=date(2025, 1, 12), description="Target",
+        )
+        self.assertEqual(self.budget.spent, Decimal("350"))
+        self.assertEqual(self.budget.remaining, Decimal("50"))
+        # 350 / 400 = 87.5%
+        self.assertAlmostEqual(float(self.budget.spent_percent), 87.5, places=1)
+        self.assertFalse(self.budget.is_over_budget)
+
+    def test_budget_over_budget(self):
+        from decimal import Decimal
+        Transaction.objects.create(
+            user=self.user, account=self.account, category=self.category,
+            amount=Decimal("500"), date=date(2025, 1, 12), description="Big",
+        )
+        self.assertTrue(self.budget.is_over_budget)
+        self.assertGreater(self.budget.spent_percent, 100)

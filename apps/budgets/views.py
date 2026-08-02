@@ -44,9 +44,11 @@ def budget_summary(request):
         actual = Transaction.objects.filter(
             user=request.user,
             category=budget.category,
+            transaction_type="expense",
             date__gte=month_start,
             date__lte=month_end,
         ).aggregate(total=Sum("amount"))["total"] or 0
+        actual = abs(actual)
         summary.append({
             "category": budget.category.name,
             "amount": budget.amount,

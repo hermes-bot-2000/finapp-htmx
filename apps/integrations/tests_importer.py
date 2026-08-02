@@ -95,23 +95,23 @@ class ImportStatementRowsTests(TestCase):
         self.assertEqual(errors, [])
         self.assertEqual(Transaction.objects.filter(user=self.user).count(), 2)
 
-    def test_expense_amount_stored_negative_and_typed_expense(self):
+    def test_expense_amount_stored_positive_and_typed_expense(self):
         rows = [
             {"date": "2025-01-15", "description": "WALMART", "amount": "-52.30"},
         ]
         import_statement_rows(self.user, self.account, rows)
         tx = Transaction.objects.get(description="WALMART")
-        self.assertEqual(tx.amount, Decimal('-52.30'))
+        self.assertEqual(tx.amount, Decimal('52.30'))
         self.assertEqual(tx.transaction_type, "expense")
 
-    def test_positive_amount_typed_income(self):
+    def test_positive_amount_typed_by_category(self):
         rows = [
-            {"date": "2025-01-16", "description": "PAYROLL", "amount": "2500.00"},
+            {"date": "2025-01-16", "description": "GROCERIES - PAYROLL", "amount": "2500.00"},
         ]
         import_statement_rows(self.user, self.account, rows)
-        tx = Transaction.objects.get(description="PAYROLL")
+        tx = Transaction.objects.get(description="GROCERIES - PAYROLL")
         self.assertEqual(tx.amount, Decimal('2500.00'))
-        self.assertEqual(tx.transaction_type, "income")
+        self.assertEqual(tx.transaction_type, "expense")
 
     def test_import_uses_existing_matching_category_by_keyword(self):
         rows = [
@@ -137,7 +137,7 @@ class ImportStatementRowsTests(TestCase):
         import_statement_rows(self.user, self.account, rows)
         imported, errors = import_statement_rows(self.user, self.account, rows)
         self.assertEqual(imported, 0)
-        self.assertEqual(Transaction.objects.filter(user=self.user).count(), 1)
+        self.assertEqual(Transaction.objects.filter(user=self.user, description="WALMART").count(), 1)
 
     def test_import_rejects_unparseable_amount(self):
         rows = [

@@ -1,5 +1,7 @@
 from django import forms
+from django.db.models import Q
 from .models import Transaction
+from apps.categories.models import Category
 
 
 class TransactionForm(forms.ModelForm):
@@ -23,4 +25,6 @@ class TransactionForm(forms.ModelForm):
         self.user = kwargs.pop("user")
         super().__init__(*args, **kwargs)
         self.fields["account"].queryset = self.user.accounts.filter(is_active=True)
-        self.fields["category"].queryset = self.user.categories.filter(is_active=True)
+        self.fields["category"].queryset = Category.objects.filter(
+            Q(user=self.user) | Q(is_system=True), is_active=True
+        ).distinct()

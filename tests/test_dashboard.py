@@ -29,6 +29,29 @@ class DashboardTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "1000")
 
+    def test_dashboard_net_worth_subtracts_liabilities(self):
+        """R1: credit-card/loan balances reduce net worth via signed_balance."""
+        Account.objects.create(
+            user=self.user, name="Visa", account_type="credit_card", balance=400
+        )
+        self.client.force_login(self.user)
+        # Checking 1000 (asset) + Visa 400 (liability) => net worth 600
+        response = self.client.get(reverse("dashboard"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "600")
+
+    def test_dashboard_excludes_accounts_opted_out_of_totals(self):
+        Account.objects.create(
+            user=self.user, name="Hidden", account_type="checking",
+            balance=999, include_in_totals=False,
+        )
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("dashboard"))
+        self.assertEqual(response.status_code, 200)
+        # Net worth stays at the single included account (1000), not 1099.
+        self.assertContains(response, "1000")
+        self.assertNotContains(response, "1099")
+
     def test_dashboard_shows_recent_transactions_when_logged_in(self):
         self.client.force_login(self.user)
         response = self.client.get(reverse("dashboard"))

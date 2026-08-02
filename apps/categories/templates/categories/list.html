@@ -1,12 +1,41 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Categories</h1>
-<a href="{% url 'create_category' %}">Add Category</a>
-<ul>
-{% for category in categories %}
-  <li>{{ category.name }} - {{ category.get_category_type_display }}</li>
-{% empty %}
-  <li>No categories yet.</li>
-{% endfor %}
-</ul>
+<div class="container-fluid py-3">
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <h1 class="mb-0">Categories</h1>
+    <a href="{% url 'create_category' %}" class="btn btn-primary">Add Category</a>
+  </div>
+
+  {% if categories %}
+  <div class="row g-3">
+    {% for category in categories %}
+    <div class="col-12 col-sm-6 col-lg-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body d-flex justify-content-between align-items-start">
+          <div>
+            <h6 class="card-title mb-1">
+              {{ category.name }}
+              {% if category.is_system %}
+              <span class="badge text-bg-secondary ms-1">Default</span>
+              {% endif %}
+            </h6>
+            <span class="badge
+              {% if category.category_type == 'income' %}text-bg-success
+              {% elif category.category_type == 'expense' %}text-bg-danger
+              {% else %}text-bg-info{% endif %}">
+              {{ category.get_category_type_display }}
+            </span>
+            {% if category.is_system %}
+            <small class="d-block text-muted mt-1">Shared default category</small>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="alert alert-info" role="alert">No categories yet.</div>
+  {% endif %}
+</div>
 {% endblock %}

@@ -114,12 +114,12 @@ def import_statement_rows(user, account, rows):
 
         if Transaction.objects.filter(
             user=user, account=account, date=date,
-            description=description, amount=amount,
+            description=description, amount=abs(amount),
         ).exists():
             continue
 
         category = _match_category(user, description)
-        transaction_type = "income" if amount >= 0 else "expense"
+        transaction_type = category.category_type if category else "expense"
         Transaction.objects.create(
             user=user,
             account=account,
