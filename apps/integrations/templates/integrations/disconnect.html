@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-3">
+  <h1 class="mb-4">Disconnect bank</h1>
+  <p>Remove the connection to <strong>{{ integration.institution_name|default:"this bank" }}</strong>? Your previously imported transactions are kept until you delete them.</p>
+  <form method="post">
+    {% csrf_token %}
+    <button class="btn btn-danger" type="submit">Disconnect</button>
+    <a href="{% url 'list_integrations' %}" class="btn btn-outline-secondary">Cancel</a>
+  </form>
+</div>
+{% endblock %}

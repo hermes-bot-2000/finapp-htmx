@@ -33,6 +33,9 @@ class Account(models.Model):
     balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default="USD")
     institution = models.CharField(max_length=100, blank=True, help_text="Bank or financial institution name")
+    institution_ref = models.CharField(
+        max_length=100, blank=True, help_text="Remote account id from the bank connection"
+    )
     account_number = models.CharField(
         max_length=100,
         blank=True,

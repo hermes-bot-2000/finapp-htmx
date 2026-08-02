@@ -22,8 +22,6 @@ class Migration(migrations.Migration):
                 ('is_active', models.BooleanField(default=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('last_synced', models.DateTimeField(blank=True, null=True)),
-                ('bank_name', models.CharField(max_length=100)),
-                ('account_type', models.CharField(max_length=50)),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='integrations', to=settings.AUTH_USER_MODEL)),
             ],
             options={

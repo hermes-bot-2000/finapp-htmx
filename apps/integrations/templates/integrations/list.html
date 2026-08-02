@@ -1,11 +1,46 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Integrations</h1>
-<ul>
-{% for integration in integrations %}
-  <li>{{ integration.provider }} - {{ integration.bank_name }} ({{ integration.account_type }})</li>
-{% empty %}
-  <li>No integrations connected.</li>
-{% endfor %}
-</ul>
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0">Bank Connections</h1>
+    <a href="{% url 'connect_institutions' %}" class="btn btn-primary">+ Connect a bank</a>
+  </div>
+
+  {% if integrations %}
+  <div class="row g-3">
+    {% for integration in integrations %}
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">{{ integration.institution_name|default:"Bank" }}</h5>
+          <p class="mb-1">
+            <span class="badge
+              {% if integration.sync_status == 'linked' %}bg-success
+              {% elif integration.sync_status == 'error' %}bg-danger
+              {% else %}bg-secondary{% endif %}">{{ integration.get_sync_status_display }}</span>
+          </p>
+          <p class="text-muted small mb-2">
+            {% if integration.last_synced %}Last synced {{ integration.last_synced|date:"Y-m-d H:i" }}{% else %}Not synced yet{% endif %}
+          </p>
+          {% if integration.last_error %}
+          <p class="text-danger small mb-2">{{ integration.last_error }}</p>
+          {% endif %}
+          <div class="d-flex gap-2">
+            <form method="post" action="{% url 'sync_integration' integration.pk %}">
+              {% csrf_token %}
+              <button class="btn btn-sm btn-outline-primary" type="submit">Sync now</button>
+            </form>
+            <a href="{% url 'disconnect_integration' integration.pk %}" class="btn btn-sm btn-outline-danger">Disconnect</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="alert alert-light border">
+    No bank connections yet. Connect a bank to automatically import transactions and balances.
+  </div>
+  {% endif %}
+</div>
 {% endblock %}

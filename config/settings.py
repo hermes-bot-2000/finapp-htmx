@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,10 +21,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-o3o8gi-9j=w3)gs5$u(egy&=84y$v3kp!l_y)5jzoc)j+2%9xn'
+# R5: read from environment in production; the inline value is a dev fallback only.
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-o3o8gi-9j=w3)gs5$u(egy&=84y$v3kp!l_y)5jzoc)j+2%9xn")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
 
 ALLOWED_HOSTS = []
 
@@ -120,5 +122,13 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
+# --- Open banking (GoCardless / Nordigen Bank Account Data API) ---
+# Empty by default => the integration uses a built-in mock client so the full
+# connect -> sync flow is exercisable locally and in tests. Set these in
+# production to enable real bank linking (https://gocardless.com/connect/).
+GOCARDLESS_SECRET_ID = os.environ.get("GOCARDLESS_SECRET_ID", "")
+GOCARDLESS_SECRET_KEY = os.environ.get("GOCARDLESS_SECRET_KEY", "")
+GOCARDLESS_BASE_URL = os.environ.get(
+    "GOCARDLESS_BASE_URL", "https://bankaccountdata.gocardless.com/api/v2"
+)
+GOCARDLESS_WEBHOOK_SECRET = os.environ.get("GOCARDLESS_WEBHOOK_SECRET", "")

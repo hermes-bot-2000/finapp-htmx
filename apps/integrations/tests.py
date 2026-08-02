@@ -8,7 +8,8 @@ class IntegrationTests(TestCase):
         self.client = Client()
         self.user = User.objects.create_user("testuser", "test@test.com", "testpass123")
         self.integration = BankIntegration.objects.create(
-            user=self.user, provider="TestBank", bank_name="Test Bank", account_type="checking"
+            user=self.user, provider="TestBank", institution_name="Test Bank",
+            requisition_id="req_test_1",
         )
 
     def test_integration_list_requires_login(self):
@@ -19,7 +20,7 @@ class IntegrationTests(TestCase):
         self.client.force_login(self.user)
         response = self.client.get(reverse("list_integrations"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "TestBank")
+        self.assertContains(response, "Test Bank")
 
     def test_base_integration_is_abstract(self):
         from apps.integrations.models import BaseIntegration

@@ -30,6 +30,8 @@ class Transaction(models.Model):
     notes = models.TextField(blank=True, help_text="Free-form notes")
     transaction_type = models.CharField(max_length=10, choices=TRANSACTION_TYPES, blank=True, help_text="Derived from category type but set explicitly for filtering")
     reference_number = models.CharField(max_length=100, blank=True, help_text="Check number, bank transaction ID, or other reference")
+    external_id = models.CharField(max_length=100, blank=True, null=True, help_text="Stable id from a bank feed (dedup key)")
+    source = models.CharField(max_length=20, blank=True, help_text="How the transaction entered the system (manual, bank_sync, import)")
     is_recurring = models.BooleanField(default=False)
     recurring_frequency = models.CharField(max_length=10, choices=RECURRING_FREQUENCIES, blank=True)
     recurring_ends = models.DateField(null=True, blank=True, help_text="Date when recurring transaction ends")
