@@ -15,7 +15,7 @@ class UploadStatementViewTests(TestCase):
         self.client = Client()
         self.user = User.objects.create_user("up", "up@test.com", "pw12345")
         self.account = Account.objects.create(
-            user=self.user, name="Checking", account_type="checking", balance=0
+            user=self.user, name="Checking", account_type="checking", opening_balance=0
         )
         Category.objects.create(user=self.user, name="Groceries", category_type="expense")
 

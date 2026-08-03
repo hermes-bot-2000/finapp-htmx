@@ -1,3 +1,5 @@
+import hashlib
+import hmac
 from decimal import Decimal
 
 from django.conf import settings
@@ -8,6 +10,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST, require_http_methods
 
 from apps.integrations.models import BankIntegration
 from apps.integrations.gocardless import get_client, GoCardlessError
@@ -104,6 +107,9 @@ def integration_callback(request):
     if req["account_ids"]:
         messages.success(request, "Bank connected. Syncing transactions…")
         integration.sync_transactions()
+        # The imported rows move the derived balance; reconcile back to the
+        # balance the bank reports so the ledger and the bank agree.
+        _apply_balances(integration, integration.fetch_balances())
     else:
         messages.warning(request, "Bank connected but no accounts were returned.")
     return redirect("list_integrations")
@@ -126,7 +132,7 @@ def _ensure_accounts(user, integration, client):
             user=user,
             name=f"{integration.institution_name} Account",
             account_type="checking",
-            balance=balance,
+            opening_balance=balance,
             currency=currency,
             institution=integration.institution_name,
             institution_ref=account_id,
@@ -134,7 +140,9 @@ def _ensure_accounts(user, integration, client):
 
 
 @login_required
+@require_POST
 def sync_integration(request, pk):
+    """Pulling from the bank is a side effect — POST only (F6)."""
     integration = get_object_or_404(BankIntegration, pk=pk, user=request.user)
     try:
         count = integration.sync_transactions()
@@ -150,12 +158,16 @@ def _apply_balances(integration, balances):
     from apps.accounts.models import Account
 
     for account_id, amount in balances.items():
-        Account.objects.filter(user=integration.user, institution_ref=account_id).update(
-            balance=amount
-        )
+        # The bank-reported balance is authoritative: reconcile the derived
+        # ledger to it by absorbing the delta into opening_balance.
+        for account in Account.objects.filter(
+            user=integration.user, institution_ref=account_id
+        ):
+            account.set_current_balance(amount)
 
 
 @login_required
+@require_http_methods(["GET", "POST"])
 def disconnect_integration(request, pk):
     integration = get_object_or_404(BankIntegration, pk=pk, user=request.user)
     if request.method == "POST":
@@ -173,14 +185,22 @@ def disconnect_integration(request, pk):
 
 
 @csrf_exempt
+@require_POST
 def integration_webhook(request):
     """GoCardless pushes balance/transaction updates here.
 
-    The live API signs the body with the webhook secret; verify it before
-    trusting the payload in production (GOCARDLESS_WEBHOOK_SECRET). In
-    production this should enqueue a background sync job per requisition.
+    F7: this endpoint fails *closed*. With no ``GOCARDLESS_WEBHOOK_SECRET``
+    configured there is no way to authenticate a caller, so the endpoint is
+    unavailable rather than accepting anonymous writes. When a secret is set,
+    the request body must carry a matching HMAC-SHA256 hex digest in the
+    ``Webhook-Signature`` header, compared with ``hmac.compare_digest`` so the
+    check is not timing-attackable.
     """
     secret = getattr(settings, "GOCARDLESS_WEBHOOK_SECRET", "")
-    if secret and request.headers.get("Webhook-Signature") != secret:
+    if not secret:
+        return HttpResponse("webhook not configured", status=503)
+    provided = request.headers.get("Webhook-Signature", "")
+    expected = hmac.new(secret.encode(), request.body, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(provided, expected):
         return HttpResponse("invalid signature", status=400)
     return HttpResponse("ok", status=200)

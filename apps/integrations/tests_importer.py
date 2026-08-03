@@ -76,7 +76,7 @@ class ImportStatementRowsTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user("imp", "imp@test.com", "pw12345")
         self.account = Account.objects.create(
-            user=self.user, name="Checking", account_type="checking", balance=0
+            user=self.user, name="Checking", account_type="checking", opening_balance=0
         )
         self.expense_cat = Category.objects.create(
             user=self.user, name="Groceries", category_type="expense"
@@ -104,14 +104,16 @@ class ImportStatementRowsTests(TestCase):
         self.assertEqual(tx.amount, Decimal('52.30'))
         self.assertEqual(tx.transaction_type, "expense")
 
-    def test_positive_amount_typed_by_category(self):
+    def test_positive_amount_is_income_even_when_an_expense_category_matches(self):
+        """F2: the statement sign decides direction; a mismatched category is dropped."""
         rows = [
             {"date": "2025-01-16", "description": "GROCERIES - PAYROLL", "amount": "2500.00"},
         ]
         import_statement_rows(self.user, self.account, rows)
         tx = Transaction.objects.get(description="GROCERIES - PAYROLL")
         self.assertEqual(tx.amount, Decimal('2500.00'))
-        self.assertEqual(tx.transaction_type, "expense")
+        self.assertEqual(tx.transaction_type, "income")
+        self.assertIsNone(tx.category)
 
     def test_import_uses_existing_matching_category_by_keyword(self):
         rows = [

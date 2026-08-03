@@ -60,7 +60,7 @@ class Command(BaseCommand):
             acct, _ = Account.objects.update_or_create(
                 user=user,
                 name=name,
-                defaults={"account_type": atype, "balance": balance},
+                defaults={"account_type": atype, "opening_balance": balance},
             )
             accounts.append(acct)
         self.stdout.write(self.style.SUCCESS("Created {} accounts".format(len(accounts))))

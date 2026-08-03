@@ -8,7 +8,7 @@ class AccountTests(TestCase):
         self.client = Client()
         self.user = User.objects.create_user("testuser", "test@test.com", "testpass123")
         self.account = Account.objects.create(
-            user=self.user, name="Checking", account_type="checking", balance=1000
+            user=self.user, name="Checking", account_type="checking", opening_balance=1000
         )
 
     def test_account_list_requires_login(self):
@@ -26,7 +26,7 @@ class AccountTests(TestCase):
         response = self.client.post(reverse("create_account"), {
             "name": "Savings",
             "account_type": "savings",
-            "balance": 5000,
+            "opening_balance": 5000,
         })
         self.assertEqual(response.status_code, 302)
         self.assertTrue(Account.objects.filter(name="Savings").exists())

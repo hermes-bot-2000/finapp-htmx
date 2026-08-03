@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="container-fluid py-3">
+  <h1>Delete Account</h1>
+  <p>Are you sure you want to delete <strong>{{ object.name }} ({{ object.get_account_type_display }})</strong>?</p>
+  <p class="text-muted">Deleting an account also deletes every transaction recorded against it.</p>
+  <form method="post" action="{% url 'delete_account' object.pk %}">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Delete</button>
+    <a href="{% url 'list_accounts' %}" class="btn btn-secondary">Cancel</a>
+  </form>
+</section>
+{% endblock %}

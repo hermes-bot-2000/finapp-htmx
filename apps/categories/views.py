@@ -1,7 +1,10 @@
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+from django.urls import reverse_lazy
 from django.views.decorators.http import require_http_methods
 from django.db.models import Q
+from django.views.generic import DeleteView, UpdateView
 from .models import Category
 from .forms import CategoryForm
 
@@ -26,3 +29,27 @@ def create_category(request):
     else:
         form = CategoryForm(user=request.user)
     return render(request, "categories/form.html", {"form": form})
+
+
+class OwnedCategoryMixin(LoginRequiredMixin):
+    """Own, non-system categories only: system defaults are shared and immutable."""
+
+    model = Category
+    success_url = reverse_lazy("list_categories")
+
+    def get_queryset(self):
+        return Category.objects.filter(user=self.request.user, is_system=False)
+
+
+class CategoryUpdateView(OwnedCategoryMixin, UpdateView):
+    form_class = CategoryForm
+    template_name = "categories/form.html"
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
+
+class CategoryDeleteView(OwnedCategoryMixin, DeleteView):
+    template_name = "categories/confirm_delete.html"

@@ -28,3 +28,35 @@ class TransactionForm(forms.ModelForm):
         self.fields["category"].queryset = Category.objects.filter(
             Q(user=self.user) | Q(is_system=True), is_active=True
         ).distinct()
+
+
+class TransactionFilterForm(forms.Form):
+    """Validate the list-view query string (F4).
+
+    Bad input is reported as a form error and the filter is skipped, rather
+    than reaching the ORM and raising ``ValueError`` as a 500.
+    """
+
+    date_from = forms.DateField(required=False, label="From")
+    date_to = forms.DateField(required=False, label="To")
+    category = forms.ModelChoiceField(queryset=Category.objects.none(), required=False)
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user")
+        super().__init__(*args, **kwargs)
+        self.fields["category"].queryset = Category.objects.filter(
+            Q(user=self.user) | Q(is_system=True)
+        ).distinct()
+
+    def filter(self, queryset):
+        """Apply whichever filters validated; ignore the rest."""
+        if not self.is_bound or not self.is_valid():
+            return queryset
+        data = self.cleaned_data
+        if data.get("date_from"):
+            queryset = queryset.filter(date__gte=data["date_from"])
+        if data.get("date_to"):
+            queryset = queryset.filter(date__lte=data["date_to"])
+        if data.get("category"):
+            queryset = queryset.filter(category=data["category"])
+        return queryset

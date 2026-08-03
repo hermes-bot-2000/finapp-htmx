@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="container-fluid py-3">
+  <h1>Delete Transaction</h1>
+  <p>Are you sure you want to delete <strong>{{ object.date }} — {{ object.description|default:object.payee }} (${{ object.amount }})</strong>?</p>
+  <p class="text-muted">The account balance is derived from the ledger, so it will change when this row is removed.</p>
+  <form method="post" action="{% url 'delete_transaction' object.pk %}">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Delete</button>
+    <a href="{% url 'list_transactions' %}" class="btn btn-secondary">Cancel</a>
+  </form>
+</section>
+{% endblock %}

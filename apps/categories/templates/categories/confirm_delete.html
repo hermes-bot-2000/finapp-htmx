@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="container-fluid py-3">
+  <h1>Delete Category</h1>
+  <p>Are you sure you want to delete <strong>{{ object.name }} ({{ object.get_category_type_display }})</strong>?</p>
+  <p class="text-muted">Transactions in this category are kept but become uncategorised.</p>
+  <form method="post" action="{% url 'delete_category' object.pk %}">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Delete</button>
+    <a href="{% url 'list_categories' %}" class="btn btn-secondary">Cancel</a>
+  </form>
+</section>
+{% endblock %}

@@ -12,7 +12,7 @@ class TransactionTests(TestCase):
         self.client = Client()
         self.user = User.objects.create_user("testuser", "test@test.com", "testpass123")
         self.account = Account.objects.create(
-            user=self.user, name="Checking", account_type="checking", balance=1000
+            user=self.user, name="Checking", account_type="checking", opening_balance=1000
         )
         self.category = Category.objects.create(
             user=self.user, name="Groceries", category_type="expense"
@@ -118,13 +118,13 @@ class AccountBalanceTests(TestCase):
     def test_signed_balance_liability_is_negative(self):
         from decimal import Decimal
         cc = Account.objects.create(
-            user=self.user, name="Visa", account_type="credit_card", balance=500
+            user=self.user, name="Visa", account_type="credit_card", opening_balance=500
         )
         self.assertEqual(cc.signed_balance, Decimal("-500"))
 
     def test_signed_balance_asset_is_positive(self):
         from decimal import Decimal
         chk = Account.objects.create(
-            user=self.user, name="Checking", account_type="checking", balance=1000
+            user=self.user, name="Checking", account_type="checking", opening_balance=1000
         )
         self.assertEqual(chk.signed_balance, Decimal("1000"))

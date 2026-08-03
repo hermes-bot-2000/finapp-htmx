@@ -93,16 +93,22 @@ class WebhookSignatureTests(TestCase):
             self.assertEqual(resp.status_code, 400)
 
     def test_webhook_accepts_valid_signature(self):
+        import hashlib
+        import hmac
+
+        body = "{}"
+        signature = hmac.new(b"topsecret", body.encode(), hashlib.sha256).hexdigest()
         with self.settings(GOCARDLESS_WEBHOOK_SECRET="topsecret"):
             resp = self.client.post(
                 reverse("integration_webhook"),
-                data="{}",
+                data=body,
                 content_type="application/json",
-                HTTP_WEBHOOK_SIGNATURE="topsecret",
+                HTTP_WEBHOOK_SIGNATURE=signature,
             )
             self.assertEqual(resp.status_code, 200)
 
-    def test_webhook_open_when_no_secret_configured(self):
+    def test_webhook_fails_closed_when_no_secret_configured(self):
+        """F7: unauthenticated writes are refused, not waved through."""
         with self.settings(GOCARDLESS_WEBHOOK_SECRET=""):
             resp = self.client.post(reverse("integration_webhook"), data="{}", content_type="application/json")
-            self.assertEqual(resp.status_code, 200)
+            self.assertEqual(resp.status_code, 503)

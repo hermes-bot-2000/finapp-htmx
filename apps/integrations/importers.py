@@ -118,8 +118,12 @@ def import_statement_rows(user, account, rows):
         ).exists():
             continue
 
+        # F2: the sign of the statement amount decides direction, not the
+        # guessed category. A category is only attached when it agrees.
+        transaction_type = "expense" if amount < 0 else "income"
         category = _match_category(user, description)
-        transaction_type = category.category_type if category else "expense"
+        if category and category.category_type != transaction_type:
+            category = None
         Transaction.objects.create(
             user=user,
             account=account,

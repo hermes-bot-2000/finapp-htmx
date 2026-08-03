@@ -29,6 +29,12 @@
             <small class="d-block text-muted mt-1">Shared default category</small>
             {% endif %}
           </div>
+          {% if not category.is_system %}
+          <span class="text-nowrap">
+            <a href="{% url 'update_category' category.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+            <a href="{% url 'delete_category' category.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+          </span>
+          {% endif %}
         </div>
       </div>
     </div>

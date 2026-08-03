@@ -12,22 +12,48 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 import os
+from urllib.parse import urlparse
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+from django.core.exceptions import ImproperlyConfigured  # noqa: E402
+
+
+def _env_bool(name, default):
+    return os.environ.get(name, str(default)).strip().lower() in ("1", "true", "yes", "on")
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-# R5: read from environment in production; the inline value is a dev fallback only.
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-o3o8gi-9j=w3)gs5$u(egy&=84y$v3kp!l_y)5jzoc)j+2%9xn")
-
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
+DEBUG = _env_bool("DJANGO_DEBUG", True)
 
-ALLOWED_HOSTS = []
+# SECURITY WARNING: keep the secret key used in production secret!
+# The inline value is a DEV fallback only — with DEBUG off a real key from the
+# environment is mandatory, so a production boot cannot silently run on it.
+_DEV_SECRET_KEY = "django-insecure-o3o8gi-9j=w3)gs5$u(egy&=84y$v3kp!l_y)5jzoc)j+2%9xn"
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "").strip()
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured(
+            "DJANGO_SECRET_KEY must be set when DJANGO_DEBUG is False."
+        )
+    SECRET_KEY = _DEV_SECRET_KEY
+
+# Comma-separated in the environment; localhost only in development.
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",")
+    if host.strip()
+]
+if not ALLOWED_HOSTS:
+    if not DEBUG:
+        raise ImproperlyConfigured(
+            "DJANGO_ALLOWED_HOSTS must be set when DJANGO_DEBUG is False."
+        )
+    ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]", "testserver"]
 
 
 # Application definition
@@ -49,6 +75,9 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # Must sit directly after SecurityMiddleware so static files are served
+    # with the security headers applied.
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -80,12 +109,33 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# SQLite by default so a clone runs with no setup; DATABASE_URL switches to
+# Postgres in production (postgres://user:pw@host:port/dbname).
+DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+if DATABASE_URL:
+    _db = urlparse(DATABASE_URL)
+    if _db.scheme not in ("postgres", "postgresql"):
+        raise ImproperlyConfigured(
+            f"Unsupported DATABASE_URL scheme {_db.scheme!r}; expected postgres://."
+        )
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': (_db.path or "").lstrip("/"),
+            'USER': _db.username or "",
+            'PASSWORD': _db.password or "",
+            'HOST': _db.hostname or "",
+            'PORT': str(_db.port or ""),
+            'CONN_MAX_AGE': 600,
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
@@ -122,6 +172,46 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
+STATIC_URL = os.environ.get("DJANGO_STATIC_URL", "/static/")
+STATIC_ROOT = BASE_DIR / "static_root"
+STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").exists() else []
+
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {
+        # Hashed + compressed static files served by WhiteNoise.
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"
+        if not DEBUG
+        else "django.contrib.staticfiles.storage.StaticFilesStorage"
+    },
+}
+
+
+# --- Security hardening -------------------------------------------------
+# Always-on headers; the TLS-dependent switches follow DEBUG so that plain
+# http://localhost still works in development.
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = False  # the CSRF token must be readable by htmx/JS
+X_FRAME_OPTIONS = "DENY"
+
+SECURE_SSL_REDIRECT = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SECURE_HSTS_SECONDS = 0 if DEBUG else 31536000  # 1 year
+SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
+SECURE_HSTS_PRELOAD = not DEBUG
+# Behind a TLS-terminating reverse proxy (nginx, Heroku, Fly) Django needs to
+# be told the original request was https, or SECURE_SSL_REDIRECT loops.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
+    if origin.strip()
+]
+
 # --- Open banking (GoCardless / Nordigen Bank Account Data API) ---
 # Empty by default => the integration uses a built-in mock client so the full
 # connect -> sync flow is exercisable locally and in tests. Set these in
@@ -132,3 +222,9 @@ GOCARDLESS_BASE_URL = os.environ.get(
     "GOCARDLESS_BASE_URL", "https://bankaccountdata.gocardless.com/api/v2"
 )
 GOCARDLESS_WEBHOOK_SECRET = os.environ.get("GOCARDLESS_WEBHOOK_SECRET", "")
+
+# Auth redirects. Without these Django defaults to /accounts/login/, which in
+# this project is the *bank accounts* app, not the login page.
+LOGIN_URL = "/users/login/"
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/users/login/"

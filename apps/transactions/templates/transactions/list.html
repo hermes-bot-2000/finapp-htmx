@@ -6,6 +6,17 @@
     <a href="{% url 'create_transaction' %}" class="btn btn-primary">Add Transaction</a>
   </div>
 
+  {% if filter_errors %}
+  <div class="alert alert-warning" role="alert">
+    <p class="mb-1">Some filters were ignored:</p>
+    <ul class="mb-0">
+      {% for field, errors in filter_errors.items %}
+        {% for error in errors %}<li>{{ field }}: {{ error }}</li>{% endfor %}
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
   <form method="get" class="row g-2 align-items-end mb-4">
     <div class="col-12 col-sm-auto">
       <label for="id_date_from" class="form-label small text-muted mb-1">From</label>
@@ -39,6 +50,7 @@
               <th scope="col">Category</th>
               <th scope="col">Description</th>
               <th scope="col" class="text-end">Amount</th>
+              <th scope="col" class="text-end">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -53,10 +65,14 @@
                 {% else %}text-muted{% endif %}">
                 {% if t.transaction_type == 'income' %}+{% elif t.transaction_type == 'expense' %}-{% endif %}${{ t.amount }}
               </td>
+              <td class="text-end text-nowrap">
+                <a href="{% url 'update_transaction' t.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                <a href="{% url 'delete_transaction' t.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+              </td>
             </tr>
             {% empty %}
             <tr>
-              <td colspan="4" class="text-center text-muted py-4">No transactions found.</td>
+              <td colspan="5" class="text-center text-muted py-4">No transactions found.</td>
             </tr>
             {% endfor %}
           </tbody>

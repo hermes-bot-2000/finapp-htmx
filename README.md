@@ -57,15 +57,37 @@ After running `load_test_data`, log in with:
 
 ## Deployment (Dev → Production)
 
-For a production deployment, you will need to:
+Settings are environment-driven — no code edit is needed to go to production,
+and the app refuses to boot misconfigured. With `DJANGO_DEBUG=False`,
+`DJANGO_SECRET_KEY` and `DJANGO_ALLOWED_HOSTS` are **mandatory**
+(`ImproperlyConfigured` otherwise), and HSTS, `SECURE_SSL_REDIRECT`, secure
+session/CSRF cookies and `X_FRAME_OPTIONS=DENY` all switch on automatically.
 
-1. Set `DEBUG = False` in `config/settings.py`
-2. Add your domain to `ALLOWED_HOSTS`
-3. Switch the `DATABASES` setting to PostgreSQL
-4. Set a proper `SECRET_KEY` via environment variable
-5. Run `collectstatic` to gather static files into `STATIC_ROOT`
-6. Serve static files via Nginx or a CDN
-7. Run behind Gunicorn or uWSGI
+| Variable | Required in prod | Purpose |
+|---|---|---|
+| `DJANGO_DEBUG` | yes (`False`) | Turns on every hardening switch below |
+| `DJANGO_SECRET_KEY` | yes | 50+ random chars; boot fails without it |
+| `DJANGO_ALLOWED_HOSTS` | yes | Comma-separated hostnames |
+| `DATABASE_URL` | no | `postgres://user:pw@host:5432/dbname`; SQLite if unset |
+| `DJANGO_CSRF_TRUSTED_ORIGINS` | no | Comma-separated `https://` origins |
+| `GOCARDLESS_WEBHOOK_SECRET` | for webhooks | HMAC-SHA256 secret; the endpoint returns 503 while unset |
+
+```bash
+export DJANGO_DEBUG=False
+export DJANGO_SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(64))')"
+export DJANGO_ALLOWED_HOSTS=finapp.example.com
+export DATABASE_URL=postgres://finapp:secret@localhost:5432/finapp
+python manage.py migrate
+python manage.py collectstatic --noinput
+```
+
+Static files are served by WhiteNoise (hashed + compressed via
+`CompressedManifestStaticFilesStorage`), so no separate Nginx static config is
+required. Verify the deployment posture with:
+
+```bash
+python manage.py check --deploy --fail-level WARNING
+```
 
 A minimal Gunicorn command for development-ish deployments:
 
